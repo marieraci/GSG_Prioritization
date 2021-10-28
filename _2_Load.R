@@ -22,6 +22,9 @@ library(landscapemetrics)
 # Load Habitat Suitability Models (HSMs) ----
 
 # load habitat selection layers
+# source: K. Winiarski in Review
+# replace with your raster format data
+# projection of this data is used to standardize future data pieces
 nesting <- raster("nesting_HSM.tif")
 brood <- raster("brood_HSM.tif")
 winter <- raster("winter_HSM.tif")
@@ -33,16 +36,18 @@ ext_obj <- extent(brood)
 bounds <- raster(ext_obj, crs = CRS_obj, res = 120)
 # create a raster with area outside of
 # the study boundary set as NA 
+# used to ensure rasters have a common study boundary
 bckg <- brood
 bckg[bckg!=0] <- 0 # change values to 0
 bckg[!is.finite(bckg)] <- NA # set outside area as NA
 
 # Big Sandy Reservoir (BSR) & Latitude Crop HSMs ----
-
-# reduce signal on Big Sandy Reservoir for Brood & Winter
-# used website: http://rcn.montana.edu/Resources/Converter.aspx
-# to find coordinates to limit BSR
+# The BSR was highlighted as unsuitable for prioritization and we edited their values 
+# in the HSMs using website: http://rcn.montana.edu/Resources/Converter.aspx
+# to find coordinates and create a square around the BSR area
 # by dropping pins in an interactive map converting to USGS
+# this action was suggested through consultation with local experts who
+# identified uncertainity with the relevance of this area for conservation
 BSR <- rasterToPoints(brood) # ceate matrix to alter values at BSR
 i <- 1
 while (i <= dim(BSR)[1]) {
@@ -72,6 +77,7 @@ rm(BSR)
 # Alter HSMs with DDCT ----
 
 # load in DDCT layer (rasterized in ArcMap using SubType)
+# source: https://onesteppe.wygisc.org/
 DDCT <- raster("StatewideExistingDisturbance.tif")
 DDCT <- projectRaster(DDCT, bounds, crs=CRS_obj, method = 'ngb', res = 120)
 # isolate key disturbances (ag, burns, oil and gas, and roads)
@@ -97,6 +103,9 @@ DDCT_og[DDCT_og!=0] <- -0.5
 DDCT_og[DDCT_og==0] <- NA
 # create HSM layers decreasing the probability of occurance
 # on burned and agricultural areas
+# we consulted with local experts on the validity of this action
+# and expect that it was beneficial to avoid areas like the BSR 
+# being suggested by the prioritization
 nesting_ddct <- sum(nesting, DDCT_burns, DDCT_ag, 
                     na.rm=TRUE)
 nesting_ddct[nesting_ddct<0] <- 0
@@ -120,6 +129,9 @@ names(brood_ddct) <- "layer.3"
 # Load PACs, Land Managers, KDE, abandoned leks, Other Species ----
 
 # core areas
+# source: https://map.sagegrouseinitiative.com/
+# this source is range-wide and has to be croppped to the study site
+# to be used here
 PACs <- raster('PACs.tif')
 PACs <- projectRaster(PACs, bounds, crs=CRS_obj, method = 'ngb', res = 120)
 # merge PACs
@@ -129,6 +141,7 @@ PACs[is.na(PACs[])] <- 0
 # load Manager types 
 # PADUS data
 # clipped in ArcMap
+# source: https://www.sciencebase.gov/catalog/item/602ffe50d34eb1203115c7ab
 mang_type <- raster("PADUS2_Mngr_Type.tif")
 mang_type <- projectRaster(mang_type, bounds, crs=CRS_obj, method = 'ngb', res = 120)
 # remove NAs so these areas are not available for selection
@@ -137,7 +150,9 @@ mang_type[is.na(mang_type)==TRUE] <- 0
 # also kernel density lek file (see _KDE_Raster_Generation.R)
 kde_lek <- raster('KDE_lek.tif')
 kde_lek <- projectRaster(kde_lek, bounds, crs=CRS_obj, method = 'ngb', res = 120)
-
+# abandonded leks are part of the lek file originally sourced from
+# wyoming game and fish department
+# they were isolated using ArcMap
 abandon_lek <- raster("kde_a_lek.tif")
 abandon_lek <- projectRaster(abandon_lek, bounds, crs=CRS_obj, method = 'ngb', res = 120)
 # create aggregated version
@@ -145,20 +160,24 @@ abandon_lek_agg <- aggregate(abandon_lek,
                              fact = 13.41, expand = FALSE)
 
 # winter obs KDE
+# source: directly recieved from BLM contact
 winter_obs <- raster('KDE_winter.tif')
 winter_obs <- projectRaster(winter_obs, bounds, crs=CRS_obj, method = 'ngb', res = 120)
 
 # nesting observations KDE
+# source: directly recieved from BLM contact
 nest_obs <- raster('KDE_nest.tif')
 nest_obs <- projectRaster(nest_obs, bounds, crs=CRS_obj, method = 'ngb', res = 120)
 
 # Elk Migration Routes
+# source: https://www.sciencebase.gov/catalog/item/5f80c88d82cebef40f0fefc5
 Elk <- raster('Elk_WY_SouthWindRiver_Routes11.tif')
 Elk <- projectRaster(Elk, bounds, crs=CRS_obj, method = 'ngb', res = 120)
 # merge routes
 Elk[Elk!=0] <- 1
 
 # Mule Deer Corridors
+# same source as Elk routes
 MD <- raster('MD_WY_SubletteWGFDDesignated11.tif')
 MD <- projectRaster(MD, bounds, crs=CRS_obj, method = 'ngb', res = 120)
 # merge corridors
@@ -169,7 +188,9 @@ MD[MD!=0] <- 1
 
 # how raster were created in ArcMap
 # ARCMAP STEPS:
-# create a layer with highlighted winter areas
+# after recieving hand-drawn maps of priority areas
+# from local experts we
+# created a layer with highlighted winter areas
 # first pdfs were converted to .png files 
 # using website: https://pdf2png.com/
 # then pngs were uploaded in arcmap
@@ -214,11 +235,13 @@ LC_rescale <- rescale0to1(LC_in)
 
 # load in NLCD (national land cover database) layers 
 # ArcMap was used to clip the NLCD layer to the study extent
+# source: https://www.mrlc.gov/
 NLCD <- raster("NLCD_2016_Land_Cover_L48_2013_Clip.tif")
 NLCD <- projectRaster(NLCD, bounds, crs=CRS_obj, method = 'bilinear', res = 120)
 
 # wildfire risk
 # USGS database
+# source: https://firedanger.cr.usgs.gov/viewer/index.html
 fire <- raster("Fire_Danger.tif")
 fire <- projectRaster(fire, bounds, crs=CRS_obj, method = 'bilinear', res = 120)
 fire_agg <- aggregate(fire, fact = 13.41 , expand = FALSE)
@@ -229,6 +252,8 @@ fire_agg <- aggregate(fire, fact = 13.41 , expand = FALSE)
 # data from 2013
 # downloaded as a .gbd folder from researchgate 
 # ArcMap was used to clip to study extent
+# downloaded from researchgate
+# source: https://www.researchgate.net/publication/344635338_WY_OilGasDevelopmentPotential_TNC20101img
 og <- raster("WYOGPotential_TNC2010_Clip22.tif")
 # match crs, extent and resample to match resolutions
 og <- projectRaster(og, bounds, crs=CRS_obj, method = 'bilinear', res = 120)
@@ -251,15 +276,18 @@ ccr <- projectRaster(ccr, bounds, crs=CRS_obj, method = 'ngb', res = 120)
 ccr[is.na(ccr[])] <- 0 
 
 # Copeland wind potential
+# source: https://www.researchgate.net/publication/344635164_WY_WindDevelopmentPotential_TNC_WYNDD_July2011_1km1img
 windp2 <- raster("WY_WindDevelopmentPotential_TNC_WYNDD_July2011_1km1.img")
 windp2 <- projectRaster(windp2, bounds, crs=CRS_obj, method = 'ngb', res = 120)
 
 # Copeland residential potential 
+# source: https://www.researchgate.net/publication/344635337_WYResidentialDevelopmentProbability_TNC20111img
 resp <- raster("WYResidentialDevelopmentProbability_TNC20111.img")
 resp <- projectRaster(resp, bounds, crs=CRS_obj, method = 'ngb', res = 120)
 
 # load roads
 # USGS database
+# source: https://pubs.usgs.gov/ds/821/
 roads <- raster('WY_Roads_2009_Clip_PolylineT1.tif')
 roads <- projectRaster(roads, bounds, crs=CRS_obj, method = 'ngb', res = 120)
 # remove trails, local / residential roads
@@ -270,6 +298,7 @@ roads[roads==9] <- NA
 roads[roads!=0] <- 1
 
 # wind turbines
+# https://www.sciencebase.gov/catalog/item/57bdfd8fe4b03fd6b7df5ff9
 turbines <- readOGR(dsn = ".", "Wind_Turbines_Clipped")
 t_raster <- raster(ncol=1513, nrow=1503,
                    ext = ext_obj)
