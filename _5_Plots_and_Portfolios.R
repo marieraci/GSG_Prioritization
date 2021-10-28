@@ -3,11 +3,11 @@
 # load files for plotting
 # study extent
 # Rock Springs Field Office boundary
-# source:
+# source: https://www.sciencebase.gov/catalog/item/4f4e4b00e4b07f02db6981c3
 RSFO <- readOGR(dsn = ".", "RSFO_Boundary")
 # core area boundaries 
 # created in ArcMap
-# source:
+# source: https://wgfd.wyo.gov/Habitat/Sage-Grouse-Management/Sage-Grouse-Data
 ca_bounds <- readOGR(dsn = ".", "ca_bounds")
 # lek data
 # clipped in Arcmap
