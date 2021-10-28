@@ -449,6 +449,7 @@ locked_out_2_agg[locked_out_2_agg!=0] <- 1
 
 # Restoration ----
 # Time to recovery / cost feature
+# source: https://www.sciencebase.gov/catalog/item/5c8912f3e4b09388244d7a2d
 recov <- raster('timetorecov_clip1.tif')
 recov <- projectRaster(recov, bounds, method = 'bilinear', res = 120)
 recov <- rescale0to1(recov) + bckg
