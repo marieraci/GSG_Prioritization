@@ -1,5 +1,5 @@
 # GSG_Prioritization
-Repository for prioritization process for the greater sage-grouse in the Rock Springs Field Office. Contained are scripts to show how the prioritization was structured, but some data was privately shared and not included. Where possible, the sources to data is included in the Load file.
+Repository for prioritization process for the greater sage-grouse in the Rock Springs Field Office. Contained are scripts to show how the prioritization was structured, but some data was privately shared and not included. Where possible, the sources to data is included in the Load file. Some data is loaded for plotting and the sources can be found in the Plots and Portfolios file.
 
 Running the Initialize file will cause all following numbered R files in the directory to run sequentially.
 
